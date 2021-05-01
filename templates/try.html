@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Comment System</title>
+    <style>
+            .NonLinearRegressionOdiv{
+                width: 700px;
+                height: 200px;
+                background-color: #bcbc57;
+                display: none;
+            }
+
+            .LinearRegressionOdiv{
+                width: 700px;
+                height: 200px;
+                background-color: #3c90bc;
+                display: none;
+            }
+
+            .layui-upload{
+                width: 300px;
+                height: 200px;
+                background-color: #bc5311;
+                display: none;
+            }
+
+            .submit{
+                width: 200px;
+                height: 100px;
+                background-color: #bc8e8c;
+                display: none;
+                margin-left: 50px;
+            }
+
+    </style>
+    <script src="https://cdn.bootcss.com/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/vue"></script>
+    <script src="https://unpkg.com/http-vue-loader"></script>
+</head>
+<body>
+
+    <h1>我的第一个程序</h1>
+    <p id="demo">这是一个评价系统</p>
+
+    <button type="button" name = "button1" onclick="showL()">线性部分</button>
+    <button type="button" name = "button2" onclick="showNL()">非线性部分</button>
+    <button type="button" name = "button4" onclick="sub()">提交方案</button>
+    <button type="button" name = "button3" onclick="upload()">上传训练文件</button>
+    <div class="NonLinearRegressionOdiv" name = "div1">
+        <input type = "button" value = "添加" style="width:50px; height:25px; margin-left:240px;margin-top:5px;background-color: #bcbc57;" onclick="NLadd()">
+        <input type = "button" value ="保存" style="width:50px; height:25px; margin-left:250px;margin-top:5px;background-color: #bcbc57;" onclick="NLsave()">
+        <form name = 'text' method="post">
+            参数:<input type = "text" name = "NLtextit" id = "NLtextit" style="width:60px; height:25px; background-color: #bcbc57;" >
+            变量:<select name="NLvariable" id="NVoption" onchange="get_n()">
+                    <option value="无">无</option>
+                    <option value="exp(x)">exp(x)</option>
+                    <option value="ln(x)">ln(x)</option>
+                    <option value="㏒nX">㏒nX</option>
+                    <option value="1/x">1/x</option>
+                </select>
+            <input type="text" name = "n" id="n" value="底数" style="width:15px; height:10px; background-color: #bcbc57; display: none">
+            最小值：<input type = "text" name = "NLmin" id = "NLmin" style="width:60px; height:25px; margin-top:20px;background-color: #bcbc57;" >
+            最大值:<input type = "text" name = "NLmax" id = "NLmax" style="width:60px; height:25px; margin-top:20px;background-color: #bcbc57;" >
+        </form>
+    </div>
+
+    <div class="LinearRegressionOdiv" name = "div2">
+        <input type = "button"  value = "添加" style="width:50px; height:25px; margin-left:240px;margin-top:5px;background-color: #3c90bc;" onclick="Ladd()">
+        <input type= "button" value ="保存" style="width:50px; height:25px; margin-left:250px;margin-top:5px;background-color: #3c90bc;" onclick="Lsave()">
+        <form name = 'text2' method="post">
+            参数/常数项：<input type = "text" name = "Ltextit" id = "Ltextit" style="width:60px; height:25px; margin-top:20px;background-color: #3c90bc;" >
+            变量：<select name="Lvariable" id="Voption">
+                    <option value="无">无</option>
+                    <option value="x">x</option>
+                    <option value="x²">x²</option>
+                    <option value="x³">x³</option>
+                    <option value="x^4">x^4</option>
+                </select>
+            最小值：<input type = "text" name = "Lmin" id = "Lmin" style="width:60px; height:25px; margin-top:20px;background-color: #3c90bc;" >
+            最大值  <input type = "text" name = "Lmax" id = "Lmax" style="width:60px; height:25px; margin-top:20px;background-color: #3c90bc;" >
+
+        </form>
+
+    </div>
+
+
+    <div class="layui-upload" name = "div3">
+      <label id="lb"></label><br>
+      <input type="button" value="选取待训练及结果文件" class="layui-btn layui-btn-normal" onclick="getFile()">
+      <form method="post" enctype="multipart/form-data">
+          <input style="display: none" type="file" name="trainfile" id="getF" multiple="multiple" onchange="clickF()">
+          <input type="submit" value="上传1">
+      </form>
+
+      <label id="lb2"></label><br>
+      <input type="button" value="选取待预测文件" class="layui-btn layui-btn-normal" onclick="getFile2()">
+      <form method="post" enctype="multipart/form-data">
+          <input style="display: none" type="file" name="prefile" id="getF2" onchange="clickF2()">
+          <input type="submit" value="上传2">
+      </form>
+
+    </div>
+
+     <div class="submit" name = "div4">
+        <input type = "button"  value = "更新当前模型" style="width:100px; height:25px; margin-left:65px;margin-top:5px;background-color: #bc8e8c;" onclick="apparentModel()">
+        <input type= "button" value ="训练新模型" style="width:100px; height:25px; margin-left:65px;margin-top:5px;background-color: #bc8e8c;" onclick="newModel()">
+    </div>
+
+    <script>
+
+        var LOdiv = document.getElementsByTagName("div")[1];
+        var NLOdiv=document.getElementsByTagName("div")[0];
+        var uploadFile = document.getElementsByTagName("div")[2];
+        var submit = document.getElementsByTagName("div")[3];
+        var Lparams = {};
+        var NLparams = {};
+        var flagNL = 0;
+        var flagL = 0;
+
+        function showL()
+        {
+             LOdiv.style.display="block";
+             NLOdiv.style.display="none";
+             uploadFile.style.display ="none";
+             submit.style.display ="none";
+
+        }
+
+
+        function showNL()
+        {
+             NLOdiv.style.display="block";
+             LOdiv.style.display="none";
+             uploadFile.style.display ="none";
+             submit.style.display ="none";
+
+        }
+
+        function upload()
+        {
+            NLOdiv.style.display="none";
+            LOdiv.style.display="none";
+            uploadFile.style.display ="block";
+            submit.style.display ="none";
+        }
+
+        function Ladd()
+        {
+            var addline = "<form name = 'text2' method=\"post\">\n" +
+                "            参数/常数项：<input type = \"text\" name = \"Ltextit\" id = \"Ltextit\" style=\"width:60px; height:25px; margin-top:20px;background-color: #3c90bc;\" >\n" +
+                "            变量：<select name=\"Lvariable\">\n" +
+                "                <option value=\"无\">无</option>\n" +
+                "                <option value=\"x\">x</option>\n" +
+                "                <option value=\"x²\">x²</option>\n" +
+                "                <option value=\"x³\">x³</option>\n" +
+                "                <option value=\"x^4\">x^4</option>\n" +
+                "            </select>\n" +
+                "            最小值：<input type = \"text\" name = \"Lmin\" id = \"Lmin\" style=\"width:60px; height:25px; margin-top:20px;background-color: #3c90bc;\" >\n" +
+                "            最大值:<input type = \"text\" name = \"Lmax\" id = \"Lmax\" style=\"width:60px; height:25px; margin-top:20px;background-color: #3c90bc;\" >\n" +
+                "        </form>";
+            $('.LinearRegressionOdiv').append(addline);
+        }
+
+        function save()
+        {
+            LOdiv.style.display="none";
+            NLOdiv.style.display="none";
+            uploadFile.style.display ="none";
+            submit.style.display ="none";
+
+        }
+        function Lsave()
+        {
+            Lparams = Lget();
+            Lparams = JSON.stringify(Lparams);
+            LOdiv.style.display="none";
+            flagL=1;
+        }
+
+        function Lget()
+        {
+            var times = new Array();
+            $("input[name = 'Ltextit']").each(function (i,value) {
+                    var obj = {};
+                    obj.Ltextit = $(this).val();
+                    times.push(obj);
+            });
+            $("select[name = 'Lvariable']").each(function (i,value) {
+                    times[i].Lvariable = $(this).val();
+            });
+            $("input[name = 'Lmin']").each(function (i,value) {
+                   min = $(this).val();
+                   if (min == ""){
+                        min = 0;
+                   }
+                   times[i].Lmin = min;
+            });
+            $("input[name = 'Lmax']").each(function (i,value) {
+                   max = $(this).val();
+                   if (max == ""){
+                        max = 0;
+                   }
+                   times[i].Lmax = max;
+            });
+
+            return times;
+        }
+
+        function NLadd() {
+            var addNline = "<form name = 'text' method=\"post\">\n" +
+                "            参数:<input type = \"text\" name = \"NLtextit\" id = \"NLtextit\" style=\"width:60px; height:25px; background-color: #bcbc57;\" >\n" +
+                "            变量:<select name=\"NLvariable\" id=\"NVoption\" onchange=\"get_n()\">\n" +
+                "                    <option value=\"无\">无</option>\n" +
+                "                    <option value=\"exp(x)\">exp(x)</option>\n" +
+                "                    <option value=\"ln(x)\">ln(x)</option>\n" +
+                "                    <option value=\"㏒nX\">㏒nX</option>\n" +
+                "                    <option value=\"1/x\">1/x</option>\n" +
+                "                </select>\n" +
+                "            <input type=\"text\" name = \"n\" id=\"n\" value=\"底数\" style=\"width:15px; height:10px; background-color: #bcbc57; display: none\">\n" +
+                "            最小值：<input type = \"text\" name = \"NLmin\" id = \"NLmin\" style=\"width:60px; height:25px; margin-top:20px;background-color: #bcbc57;\" >\n" +
+                "            最大值:<input type = \"text\" name = \"NLmax\" id = \"NLmax\" style=\"width:60px; height:25px; margin-top:20px;background-color: #bcbc57;\" >\n" +
+                "        </form>";
+            $('.NonLinearRegressionOdiv').append(addNline);
+        }
+
+        function get_n() {
+            var checkText=$("#NVoption").find("option:selected").text()
+            if (checkText == "㏒nX"){
+                $("#n").show();
+                document.getElementById("n").value = "";
+            }
+            else{
+                $("#n").hide();
+            }
+        }
+
+        function NLsave()
+        {
+            NLparams =  NLget();
+            NLparams = JSON.stringify(NLparams);
+            NLOdiv.style.display="none";
+            flagNL = 1;
+        }
+
+        function NLget()
+        {
+            var times = new Array();
+            $("input[name = 'NLtextit']").each(function (i,value) {
+                    var obj = {};
+                    obj.Ltextit = $(this).val();
+                    times.push(obj);
+            });
+            $("select[name = 'NLvariable']").each(function (i,value) {
+                    times[i].Lvariable = $(this).val();
+                    if (times[i].Lvariable == "㏒nX"){
+                        $("input[name ='n']").each(function (i,value) {
+                              times[i].n = $(this).val();
+                         });
+                    }
+                    else
+                    {
+                        times[i].n = 0;
+                    }
+            });
+             $("input[name = 'NLmin']").each(function (i,value) {
+                   min = $(this).val();
+                   if (min == ""){
+                        min = 0;
+                   }
+                   times[i].Lmin = min;
+            });
+             $("input[name = 'NLmax']").each(function (i,value) {
+                   max = $(this).val();
+                   if (max == ""){
+                        max = 0;
+                   }
+                   times[i].Lmax = max;
+            });
+
+            return times;
+        }
+
+
+
+        function getFile(){
+            $("#getF").click();
+        }
+
+        var filename="";
+        function clickF() {
+            filename=$("#getF").val();
+            var filenames=filename.split("\\");
+            filename=filenames[filenames.length-1];
+            $("#lb").text(filename);
+        }
+
+        function getFile2(){
+            $("#getF2").click();
+        }
+
+        var filename2="";
+        function clickF2() {
+            filename2=$("#getF2").val();
+            var filenames=filename2.split("\\");
+            filename2=filenames[filenames.length-1];
+            $("#lb2").text(filename2);
+        }
+
+        function sendFile()
+        {
+            var File = document.getElementById("getF").files;
+            var formdata = new FormData();//创建一个表单
+
+            for(var i = 0; i < File.length; i++){
+                formdata.append("file", File[i]);
+
+            }
+            alert(formdata)
+            $.ajax({
+                type:'post',
+                async:true,
+                url:"/",
+                data:formdata
+            })
+        }
+
+        function sub() {
+            NLOdiv.style.display="none";
+            LOdiv.style.display="none";
+            uploadFile.style.display ="none";
+            submit.style.display ="block";
+        }
+
+        function apparentModel()
+        {
+             if  (flagL == 0){
+                 Lparams = JSON.stringify("none")
+             }
+             if  (flagNL == 0){
+                 NLparams = JSON.stringify("none")
+             }
+             var pushdata = {
+                 LinearRegressiondata:Lparams,
+                 NonLinearRegressiondata: NLparams,
+                 Model:JSON.stringify("apparent")
+             };
+             $.ajax({
+                type:'post',
+                async:true,
+                url:"/",
+                data:pushdata,
+                success:function e(){
+                        $(".NonLinearRegressionOdiv").hide();
+                        $(".LinearRegressionOdiv").hide();
+                        document.getElementById("Ltextit").value = "";
+                        document.getElementById("NLtextit").value = "";
+                }
+            })
+            submit.style.display ="none";
+        }
+
+        function newModel()
+        {
+             if  (flagL == 0){
+                 Lparams = JSON.stringify("none")
+             }
+             if  (flagNL == 0){
+                 NLparams = JSON.stringify("none")
+             }
+             var pushdata = {
+                 LinearRegressiondata:Lparams,
+                 NonLinearRegressiondata: NLparams,
+                 Model:JSON.stringify("new")
+             };
+             $.ajax({
+                type:'post',
+                async:true,
+                url:"/",
+                data:pushdata,
+                success:function e(){
+                        $(".NonLinearRegressionOdiv").hide();
+                        $(".LinearRegressionOdiv").hide();
+                        document.getElementById("Ltextit").value = "";
+                        document.getElementById("NLtextit").value = "";
+                }
+            })
+            submit.style.display ="none";
+        }
+    </script>
+
+
+</body>
+</html>
